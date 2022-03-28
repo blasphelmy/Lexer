@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexar</title>
+</head>
+<script> //PEMDAS //SADMEP
+var deliminters = new RegExp(/([*|/|+|\-|^|)|(])/);
+const numbers = new RegExp(/([0-9])/);
+var invalidToken = new RegExp(/([a-zA-Z]+)/gm);
+var brackets = [new RegExp(/[(]/g), new RegExp(/[)]/g)];
+var isString = new RegExp(/"/g);
+var headNode = null;
+var size = 0;
+var previousOpNode;
+var previousNumNode;
+
+var tokens = new Array();
+window.onload = function(){
+    // var newExpression = "4*2-2*2"; 
+    var newExpression = "3^1*2+31*5^2";
+    console.log(newExpression);
+    console.log(eval(newExpression));
+    newExpression = breakExpression(newExpression);
+    console.log(newExpression);
+    var results = createNodeTree(newExpression);
+    console.log(results);
+    console.log(results.Eval());
+}
+function createNodeTree(expressionArray){
+    for(var index = 0; index < expressionArray.length; index++){
+        var token = expressionArray[index];
+        console.log("token = ", token);
+        var newNode = new Node(token);
+        console.log(numbers.test(newNode.value));
+        // console.log(newNode);
+        if(numbers.test(newNode.value)){
+            previousNumNode = newNode; //set previous number node to the new Node;
+            if(index === expressionArray.length-1){ //if we are at the end of this expression
+                previousOpNode.rightNode = newNode;      
+            }
+        }else if(deliminters.test(newNode.value)){
+            if(typeof(previousOpNode) === "undefined"){
+                newNode.leftNode = previousNumNode;
+                previousOpNode = newNode;
+                continue;
+            }
+            // console.log(newNode.Precedence(), previousOpNode.Precedence());
+            if(previousOpNode.Precedence() <= newNode.Precedence()){
+                newNode.parentNode = previousOpNode;
+                newNode.leftNode = previousNumNode;
+                previousOpNode.rightNode = newNode;
+                previousOpNode = newNode;
+            }else if(previousOpNode.Precedence() > newNode.Precedence()){
+                previousOpNode.rightNode = previousNumNode;
+                newNode.leftNode = previousOpNode;
+                previousOpNode.parentNode = newNode;
+                previousOpNode = newNode;
+            }
+            // console.log("this token, previous token", newNode.value, newNode.parentNode.value);
+            
+        }   
+    }
+    // console.log(previousOpNode.returnHeadOfTree());
+    return previousOpNode.returnHeadOfTree();
+}
+function breakExpression(expression){
+    var newArray = expression.split(deliminters);
+    newArray = removeEmptyIndices(newArray);
+    return newArray;
+}
+class Node {
+    parentNode;
+    leftNode;
+    rightNode;
+    value;
+    type;
+    constructor(value){
+        this.value = value;
+        if(deliminters.test(this.value)) {
+            this.type = "operator";
+        }
+        if(numbers.test(this.value)){
+            this.value = Number(this.value);
+            this.type = "num";
+        }
+    }
+    Precedence(){
+        switch(this.value){
+            case "^": return 3;
+            case "*": return 2;
+            case "/": return 2;
+            case "+": return 1;
+            case "-": return 1;
+        } 
+    }
+    returnHeadOfTree(){
+        var newNode = this;
+        while(typeof(newNode.parentNode) !== "undefined"){
+            newNode = newNode.parentNode;
+        }
+        return newNode;
+    }
+    Eval(){
+        if(this.type === "num"){
+            return this.value;
+        }else if(this.type === "operator"){
+                switch(this.value){
+                case "^": return Math.pow(this.leftNode.Eval(), this.rightNode.Eval());
+                case "*": return this.rightNode.Eval() * this.leftNode.Eval();
+                case "/": return this.rightNode.Eval() / this.leftNode.Eval();
+                case "+": return this.rightNode.Eval() + this.leftNode.Eval();
+                case "-": return this.rightNode.Eval() - this.leftNode.Eval();
+            } 
+        }
+    }
+}
+function removeEmptyIndices(array) {
+  //clean array if nothing is detected on indexes
+  var newArray = new Array();
+  for (index = 0; index < array.length; index++) {
+    if (!(array[index].trim().length === 0)) {
+      newArray.push(array[index]);
+    }
+  }
+  return newArray;
+}
+</script>
+<body>
+<textarea id="expression" id="" cols="30" rows="10">
+</textarea>
+</body>
+</html>
