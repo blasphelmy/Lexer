@@ -9,70 +9,106 @@
 <script> //PEMDAS //SADMEP
 var deliminters = new RegExp(/([*|/|+|\-|^|)|(])/);
 const numbers = new RegExp(/([0-9])/);
-var invalidToken = new RegExp(/([a-zA-Z]+)/gm);
-var brackets = [new RegExp(/[(]/g), new RegExp(/[)]/g)];
-var isString = new RegExp(/"/g);
-var headNode = null;
-var size = 0;
-var previousOpNode;
-var previousNumNode;
+var invalidToken = new RegExp(/([a-zA-Z]+)/);
+var brackets = [new RegExp(/[(]/), new RegExp(/[)]/)];
+var isString = new RegExp(/"/);
+function calculate(){
+  var newExpression = document.getElementById("expression").value;
+  console.log(getPrecedence("("));
+  var newTokens = tokenizer(newExpression); //converts expression from postfix to infix
+  document.getElementById("postfixed").innerHTML = "<p>" + newTokens.join(" ") + "</p>";
+  var newTokenTree = parseTokens(newTokens);
+  console.log(newTokenTree);
+  document.getElementById("results").innerHTML = "<p>Results = " + newTokenTree.Eval() + "</p>";
 
-var tokens = new Array();
-window.onload = function(){
-    // var newExpression = "4*2-2*2"; 
-    var newExpression = "3^1*2+31*5^2";
-    console.log(newExpression);
-    console.log(eval(newExpression));
-    newExpression = breakExpression(newExpression);
-    console.log(newExpression);
-    var results = createNodeTree(newExpression);
-    console.log(results);
-    console.log(results.Eval());
 }
-function createNodeTree(expressionArray){
-    for(var index = 0; index < expressionArray.length; index++){
-        var token = expressionArray[index];
-        console.log("token = ", token);
-        var newNode = new Node(token);
-        console.log(numbers.test(newNode.value));
+function parseTokens(expressionArray){
+  var newNumberStack = new Stack;
+  for(var index = 0; index < expressionArray.length; index++){
+      var token = expressionArray[index];
+      // console.log("token = ", token);
+      
+      var newNode = new Node(token);
+      if(newNode.type === "num"){
+        newNumberStack.push(newNode);
+      }else if(newNode.type === "operator"){
+          newNode.rightNode = newNumberStack.pop();
+          newNode.leftNode = newNumberStack.pop();
+          newNumberStack.push(newNode);
+        }
         // console.log(newNode);
-        if(numbers.test(newNode.value)){
-            previousNumNode = newNode; //set previous number node to the new Node;
-            if(index === expressionArray.length-1){ //if we are at the end of this expression
-                previousOpNode.rightNode = newNode;      
-            }
-        }else if(deliminters.test(newNode.value)){
-            if(typeof(previousOpNode) === "undefined"){
-                newNode.leftNode = previousNumNode;
-                previousOpNode = newNode;
-                continue;
-            }
-            // console.log(newNode.Precedence(), previousOpNode.Precedence());
-            if(previousOpNode.Precedence() <= newNode.Precedence()){
-                newNode.parentNode = previousOpNode;
-                newNode.leftNode = previousNumNode;
-                previousOpNode.rightNode = newNode;
-                previousOpNode = newNode;
-            }else if(previousOpNode.Precedence() > newNode.Precedence()){
-                previousOpNode.rightNode = previousNumNode;
-                newNode.leftNode = previousOpNode;
-                previousOpNode.parentNode = newNode;
-                previousOpNode = newNode;
-            }
-            // console.log("this token, previous token", newNode.value, newNode.parentNode.value);
-            
-        }   
-    }
-    // console.log(previousOpNode.returnHeadOfTree());
-    return previousOpNode.returnHeadOfTree();
+      }
+      // console.log(newNode); 
+    return newNode;
 }
-function breakExpression(expression){
-    var newArray = expression.split(deliminters);
-    newArray = removeEmptyIndices(newArray);
-    return newArray;
+function tokenizer(expression){
+    expression = expression.split(deliminters);
+    expression = removeEmptyIndices(expression);
+    // console.log(expression);
+    var postFixed = new Array();
+    var operationStack = new Stack();
+    for(var index = 0; index < expression.length; index++){
+      var token = expression[index];
+      // console.log("token = " + token);
+      // console.log(brackets[0].test(token), brackets[1].test(token));
+      // var newNode = new Node(token);
+      // console.log("newNode Data : ", newNode.value, newNode.type);
+      if(numbers.test(token)){ //if number
+        postFixed.push(token)
+      }else if(brackets[0].test(token)){ //if open brackets
+        operationStack.push(token);
+      }
+      else if(brackets[1].test(token)){ //if closing brackers
+        while(operationStack.peek() !== "("){
+          postFixed.push(operationStack.pop());
+        }
+        operationStack.pop();
+      }
+      else{
+        // console.log(eval(getPrecedence(operationStack.peek()) >= getPrecedence(token)));
+        while(getPrecedence(operationStack.peek()) >= getPrecedence(token)){
+          postFixed.push(operationStack.pop());
+        }
+        operationStack.push(token);
+      }
+    }
+    while(typeof(operationStack.peek()) !== "undefined"){
+      postFixed.push(operationStack.pop());
+    }
+    // console.log(postFixed);
+  return postFixed;
+}
+function getPrecedence(value){
+        switch(value){ //PEMDAS
+            case "^": return 4;
+            case "/": return 2;
+            case "*": return 2;
+            case "+": return 1;
+            case "-": return 1;
+            case "(": return 0;
+        } 
+}
+class Stack{
+  top;
+  newStack;
+  constructor(){
+    this.newStack = [];
+    this.top = -1;
+  }
+  push(data){
+    this.top++;
+    this.newStack[this.top] = data;
+  }
+  pop(){
+    var newData = this.newStack[this.top];
+    this.top--;
+    return newData;
+  }
+  peek(){
+    return this.newStack[this.top];
+  }
 }
 class Node {
-    parentNode;
     leftNode;
     rightNode;
     value;
@@ -81,27 +117,27 @@ class Node {
         this.value = value;
         if(deliminters.test(this.value)) {
             this.type = "operator";
+            if(brackets[0].test(this.value)){
+                this.type = "openBraces";
+            }
+            if(brackets[1].test(this.value)){
+                this.type = "closingBraces";
+            }
         }
-        if(numbers.test(this.value)){
+        else if(numbers.test(this.value)){
             this.value = Number(this.value);
             this.type = "num";
         }
     }
     Precedence(){
-        switch(this.value){
-            case "^": return 3;
-            case "*": return 2;
+        switch(this.value){ //PEMDAS
+            case "^": return 4;
             case "/": return 2;
+            case "*": return 2;
             case "+": return 1;
             case "-": return 1;
+            case "(": return 0;
         } 
-    }
-    returnHeadOfTree(){
-        var newNode = this;
-        while(typeof(newNode.parentNode) !== "undefined"){
-            newNode = newNode.parentNode;
-        }
-        return newNode;
     }
     Eval(){
         if(this.type === "num"){
@@ -109,13 +145,46 @@ class Node {
         }else if(this.type === "operator"){
                 switch(this.value){
                 case "^": return Math.pow(this.leftNode.Eval(), this.rightNode.Eval());
-                case "*": return this.rightNode.Eval() * this.leftNode.Eval();
-                case "/": return this.rightNode.Eval() / this.leftNode.Eval();
-                case "+": return this.rightNode.Eval() + this.leftNode.Eval();
-                case "-": return this.rightNode.Eval() - this.leftNode.Eval();
+                case "*": return this.leftNode.Eval() * this.rightNode.Eval();
+                case "/": return this.leftNode.Eval() / this.rightNode.Eval();
+                case "+": return this.leftNode.Eval() + this.rightNode.Eval();
+                case "-": return this.leftNode.Eval() - this.rightNode.Eval();
             } 
         }
     }
+}
+function sliceArray(array, start, end){ //returns a stack of statements as an array
+  var newArray = new Array();
+  for(index = start; index <= end; index++){
+    newArray.push(array[index]);
+  }
+  return newArray;
+}
+function findMatching(array, start, token) { //token = "(" pr "{"
+  //raw string -> breakIntoComponents() first. start is the index of the array where a function declartion is detected.
+  var token_2 = null;
+  if(token === "{"){
+    token_2 = "}";
+  }else if(token === "("){
+    token = (/([(])/);
+    token_2 = (/([)])/);
+  }
+  var count = 0;
+  var endLine = -1;
+  for (index = start; index < array.length; index++) {
+    if (array[index].search(token) > -1) {
+      count = count + 1;
+    }
+    if (array[index].search(token_2) > -1) {
+      count = count - 1;
+    }
+    if (count === 0 && array[index].search(token_2) > -1) {
+      endLine = index;
+      break;
+    }
+    // console.log(count);
+  }
+  return endLine;
 }
 function removeEmptyIndices(array) {
   //clean array if nothing is detected on indexes
@@ -129,7 +198,9 @@ function removeEmptyIndices(array) {
 }
 </script>
 <body>
-<textarea id="expression" id="" cols="30" rows="10">
-</textarea>
+<input type="text" id="expression" class="label" value="(10+5^2)*((5*2)+9-3^3 )/ 2">
+<button onclick="calculate()">Calculate</button>
+<div id="postfixed"></div>
+<div id="results"></div>
 </body>
 </html>
