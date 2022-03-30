@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lexar</title>
+    <title>Lexer</title>
 </head>
 <script> //PEMDAS //SADMEP
 var deliminters = new RegExp(/([*|/|+|\-|^|)|(])/);
@@ -19,7 +19,7 @@ function calculate(){
   document.getElementById("postfixed").innerHTML = "<p>" + newTokens.join(" ") + "</p>";
   var newTokenTree = parseTokens(newTokens);
   console.log(newTokenTree);
-  document.getElementById("results").innerHTML = "<p>Results = " + newTokenTree.Eval() + "</p>";
+  document.getElementById("results").innerHTML = "<p>Results = " + newTokenTree.eval() + "</p>";
 
 }
 function parseTokens(expressionArray){
@@ -27,7 +27,6 @@ function parseTokens(expressionArray){
   for(var index = 0; index < expressionArray.length; index++){
       var token = expressionArray[index];
       // console.log("token = ", token);
-      
       var newNode = new Node(token);
       if(newNode.type === "num"){
         newNumberStack.push(newNode);
@@ -139,16 +138,16 @@ class Node {
             case "(": return 0;
         } 
     }
-    Eval(){
+    eval(){
         if(this.type === "num"){
             return this.value;
         }else if(this.type === "operator"){
                 switch(this.value){
-                case "^": return Math.pow(this.leftNode.Eval(), this.rightNode.Eval());
-                case "*": return this.leftNode.Eval() * this.rightNode.Eval();
-                case "/": return this.leftNode.Eval() / this.rightNode.Eval();
-                case "+": return this.leftNode.Eval() + this.rightNode.Eval();
-                case "-": return this.leftNode.Eval() - this.rightNode.Eval();
+                case "^": return Math.pow(this.leftNode.eval(), this.rightNode.eval());
+                case "*": return this.leftNode.eval() * this.rightNode.eval();
+                case "/": return this.leftNode.eval() / this.rightNode.eval();
+                case "+": return this.leftNode.eval() + this.rightNode.eval();
+                case "-": return this.leftNode.eval() - this.rightNode.eval();
             } 
         }
     }
