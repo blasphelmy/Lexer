@@ -26,9 +26,9 @@ function parseTokens(expressionArray){
   var newNumberStack = new Stack();
   for(var index = 0; index < expressionArray.length; index++){
       var token = expressionArray[index];
-      console.log("token = ", token);
+      // console.log("token = ", token);
       var newNode = new Node(token);
-      console.log(newNode);
+      // console.log(newNode);
       if(newNode.type === "num"){
         newNumberStack.push(newNode);
       }else if(newNode.type === "operator"){
@@ -48,7 +48,6 @@ function parseTokens(expressionArray){
 }
 function tokenizer(expression){
     expression = expression.split(deliminters); 
-    console.log(expression);
     expression = removeEmptyIndices(expression);
     expression = recombineNegatives(expression);
     expression = removeEmptyIndices(expression);
@@ -61,7 +60,7 @@ function tokenizer(expression){
       // console.log(brackets[0].test(token), brackets[1].test(token));
       // var newNode = new Node(token);
       // console.log("newNode Data : ", newNode.value, newNode.type);
-      if(numbers.test(token)){ //if number
+      if(numbers.test(token) || token === "pi"|| token === "e"){ //if number
         postFixed.push(token)
       }else if(brackets[0].test(token)){ //if open brackets
         operationStack.push(token);
@@ -89,7 +88,7 @@ function tokenizer(expression){
 function recombineNegatives(array){
   var newArray = new Array();
   for(var index = 0; index < array.length; index++){
-    if(array[index] === "-" && (deliminters.test(array[index - 1]) || index === 0)){
+    if(array[index] === "-" && (deliminters.test(array[index - 1]) || index === 0) && !brackets[1].test(array[index-1])){
       newArray.push("-1");
       newArray.push("*");
     }else{
@@ -136,6 +135,12 @@ class Node {
     type;
     constructor(value){
         this.value = value;
+        if(this.value === "pi"){
+          this.type = "num";
+        }
+        if(this.value === "e"){
+          this.type = "num";
+        }
         if(numbers.test(this.value)){
             this.value = Number(this.value);
             this.type = "num";
@@ -153,19 +158,15 @@ class Node {
           this.type = "operator";
         }
     }
-    Precedence(){
-        switch(this.value){ //PEMDAS
-            case "^": return 4;
-            case "/": return 2;
-            case "*": return 2;
-            case "+": return 1;
-            case "-": return 1;
-            case "(": return 0;
-        } 
-    }
     eval(){
         if(this.type === "num"){
-            return this.value;
+          if(this.value === "pi"){
+            return 22/7;
+          }
+          if(this.value === "e"){
+            return 2.7182818284;
+          }
+          return this.value;
         }else if(this.type === "operator"){
                 switch(this.value){
                 case "^": return Math.pow(this.leftNode.eval(), this.rightNode.eval());
@@ -229,7 +230,7 @@ function trimStringInArray(array) {
 }
 </script>
 <body>
-<input type="text" id="expression" class="label" value="-(10+5^log(2^3))*((5*-2)+9-3^3 )/2">
+<input type="text" id="expression" class="label" value="-(10+pi^log(2^3))*((e*-2)+9-3^3)/2">
 <!-- <input type="text" id="expression" class="label" value="1 + log(2)"> -->
 <button onclick="calculate()">Calculate</button>
 <div id="postfixed"></div>
