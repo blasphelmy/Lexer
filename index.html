@@ -14,8 +14,8 @@ var brackets = [new RegExp(/[(]/), new RegExp(/[)]/)];
 var isString = new RegExp(/"/);
 function calculate(){
   var newExpression = document.getElementById("expression").value;
-  console.log(getPrecedence("("));
   var newTokens = tokenizer(newExpression); //converts expression from postfix to infix
+  // console.log(newTokens);
   document.getElementById("postfixed").innerHTML = "<p>" + newTokens.join(" ") + "</p>";
   var newTokenTree = parseTokens(newTokens);
   console.log(newTokenTree);
@@ -23,11 +23,12 @@ function calculate(){
 
 }
 function parseTokens(expressionArray){
-  var newNumberStack = new Stack;
+  var newNumberStack = new Stack();
   for(var index = 0; index < expressionArray.length; index++){
       var token = expressionArray[index];
       // console.log("token = ", token);
       var newNode = new Node(token);
+      // console.log(newNode);
       if(newNode.type === "num"){
         newNumberStack.push(newNode);
       }else if(newNode.type === "operator"){
@@ -41,9 +42,10 @@ function parseTokens(expressionArray){
     return newNode;
 }
 function tokenizer(expression){
-    expression = expression.split(deliminters);
+    expression = expression.split(deliminters); 
     expression = removeEmptyIndices(expression);
-    // console.log(expression);
+    expression = recombineNegatives(expression);
+    expression = removeEmptyIndices(expression);
     var postFixed = new Array();
     var operationStack = new Stack();
     for(var index = 0; index < expression.length; index++){
@@ -76,6 +78,22 @@ function tokenizer(expression){
     }
     // console.log(postFixed);
   return postFixed;
+}
+function recombineNegatives(array){
+  var newArray = new Array();
+  for(var index = 0; index < array.length; index++){
+    if(array[index] === "-" && brackets[0].test(array[index+1])){
+      newArray.push("-1");
+      newArray.push("*");
+    }
+    else if(array[index] === "-" && (deliminters.test(array[index - 1]) || index === 0)){
+      newArray.push(array[index] + array[index+1]);
+      index = index + 1;
+    }else{
+      newArray.push(array[index]);
+    } 
+  }
+  return newArray;
 }
 function getPrecedence(value){
         switch(value){ //PEMDAS
@@ -114,6 +132,10 @@ class Node {
     type;
     constructor(value){
         this.value = value;
+        if(numbers.test(this.value)){
+            this.value = Number(this.value);
+            this.type = "num";
+        }else 
         if(deliminters.test(this.value)) {
             this.type = "operator";
             if(brackets[0].test(this.value)){
@@ -122,10 +144,6 @@ class Node {
             if(brackets[1].test(this.value)){
                 this.type = "closingBraces";
             }
-        }
-        else if(numbers.test(this.value)){
-            this.value = Number(this.value);
-            this.type = "num";
         }
     }
     Precedence(){
@@ -197,7 +215,7 @@ function removeEmptyIndices(array) {
 }
 </script>
 <body>
-<input type="text" id="expression" class="label" value="(10+5^2)*((5*2)+9-3^3 )/ 2">
+<input type="text" id="expression" class="label" value="-(10+5^2)*((5*-2)+9-3^3 )/ 2">
 <button onclick="calculate()">Calculate</button>
 <div id="postfixed"></div>
 <div id="results"></div>
